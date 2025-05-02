@@ -1,0 +1,29 @@
+node_modules
+.env
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+ENV/
+.venv/
+.Python
+
+# Flask instance folder
+instance/
+*.db
+*.sqlite3
+
+# VSCode
+.vscode/
+
+# Heroku
+*.log
+
+# Application specific
+static/generated/
+static/drawings/
+uploads/
+.ipynb_checkpoints/

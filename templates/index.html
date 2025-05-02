@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Thumbnail Generator - Create Stunning Thumbnails in Seconds</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.6/dist/umd/supabase.min.js"></script>
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = '{{ config.SUPABASE_URL }}';
+        const supabaseKey = '{{ config.SUPABASE_KEY }}';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    </script>
+    <script src="https://js.stripe.com/v3/"></script>
+
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <!-- Add a spacer for left side alignment -->
+            <div class="navbar-nav me-auto d-none d-lg-flex">
+                <a class="nav-link" href="#">Home</a>
+                <a class="nav-link" href="#upload">Create</a>
+                <a class="nav-link" href="#pricing">Pricing</a>
+            </div>
+            
+            <!-- Center the brand -->
+            <a class="navbar-brand mx-auto" href="#">AI Thumbnail Generator</a>
+            
+            <!-- Toggle button for mobile -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Collapsible content -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- Mobile only navigation -->
+                <ul class="navbar-nav d-lg-none mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#upload">Create</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#pricing">Pricing</a>
+                    </li>
+                </ul>
+                
+                <!-- Auth UI - Logged Out State -->
+                <div class="logged-out ms-auto">
+                    <button class="btn btn-outline-light me-2" onclick="showLogin()">Login</button>
+                    <button class="btn btn-primary" onclick="showSignup()">Sign Up</button>
+                </div>
+                <!-- Auth UI - Logged In State -->
+                <div class="logged-in d-none ms-auto">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-1"></i>
+                            <span id="userEmail">user@example.com</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="#">My Account</a></li>
+                            <li><a class="dropdown-item" href="#">My Thumbnails</a></li>
+                            <li><a class="dropdown-item" href="#" id="mySubscription" onclick="showSubscriptionModal()">My Subscription</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="handleLogout()">Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero-section">
+        <div class="container">
+            <div class="row justify-content-center text-center">
+                <div class="col-lg-8">
+                    <h1>Transform Your Content with AI-Powered Thumbnails</h1>
+                    <p class="lead">Create eye-catching thumbnails that boost your click-through rates and engagement</p>
+                    <a href="#upload" class="btn btn-primary btn-lg">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="features-section">
+        <div class="container">
+            <h2 class="text-center mb-5">Why Choose Our AI Thumbnail Generator?</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <h3>⚡ Instant Results</h3>
+                        <p>Generate professional thumbnails in seconds, saving you hours of design work.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <h3>🎨 Smart Design</h3>
+                        <p>Our AI understands what makes thumbnails click-worthy and applies proven design principles.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <h3>📈 Boost Engagement</h3>
+                        <p>Increase your click-through rates with thumbnails that stand out in crowded feeds.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="upload" class="upload-section">
+        <div class="container">
+            <h2 class="text-center mb-5">Create Your Perfect Thumbnail</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="upload-box">
+                        <form id="generateForm" action="/generate" method="post" enctype="multipart/form-data" onsubmit="handleSubmit(event)">
+                            
+                            <!-- Sketch Button and Preview -->
+                            <div class="mb-4 d-flex align-items-center gap-3">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sketchModal">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-2" viewBox="0 0 16 16">
+                                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
+                                    </svg>
+                                    Sketch your Idea
+                                </button>
+                                <div id="sketchPreviewContainer" class="sketch-preview-container d-none">
+                                    <div class="sketch-preview" role="button" onclick="openSketchModal()">
+                                        <img id="sketchPreview" src="" alt="Sketch Preview">
+                                        <button type="button" class="btn-remove" onclick="removeSketch(event)">×</button>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="canvasData" name="canvas_data">
+                            </div>
+
+                            <!-- Prompt Input -->
+                            <div class="mb-4">
+                                <label for="prompt" class="form-label">Additional Thumbnail Description</label>
+                                <textarea class="form-control" id="prompt" name="prompt" rows="3" placeholder="Example: Create a thumbnail with neon effects and bold text..."></textarea>
+                            </div>
+
+                            <!-- Generate Button -->
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg" id="generateBtn">
+                                    <span class="button-text">Generate Thumbnails</span>
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Loading Overlay -->
+                        <div id="loadingOverlay" class="loading-overlay d-none">
+                            <div class="loading-content">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <h4 class="text-primary mb-2">Generating Thumbnails...</h4>
+                                <p class="text-muted">This may take a few moments</p>
+                            </div>
+                        </div>
+
+                        <!-- Results Section -->
+                        <div id="resultsSection" class="results-section mt-4 d-none">
+                            <h3 class="mb-3 text-center">Generated Thumbnails</h3>
+                            <div id="resultsContainer" class="d-flex justify-content-center">
+                                <!-- Generated thumbnails will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sketch Modal -->
+    <div class="modal fade" id="sketchModal" tabindex="-1" aria-labelledby="sketchModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header align-items-center">
+                    <div class="toolbar-controls d-flex align-items-center gap-3">
+                        <!-- Color Picker -->
+                        <div class="color-picker-wrapper">
+                            <label for="colorPicker" class="form-label mb-0 me-2">Color</label>
+                            <input type="color" class="form-control form-control-color" id="colorPicker" value="#000000">
+                        </div>
+                        
+                        <!-- Brush Size -->
+                        <div class="brush-size-wrapper d-flex align-items-center">
+                            <label for="brushSize" class="form-label mb-0 me-2">Size</label>
+                            <input type="range" class="form-range" id="brushSize" min="1" max="50" value="2">
+                            <span id="brushSizeValue" class="ms-2">2px</span>
+                        </div>
+
+                        <!-- Tool Buttons -->
+                        <div class="btn-group" role="group" aria-label="Drawing tools">
+                            <button type="button" class="btn btn-outline-primary active" id="brushTool" title="Brush">
+                                <i class="bi bi-brush"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="eraserTool" title="Eraser">
+                                <i class="bi bi-eraser"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="undoLastStroke()" title="Undo">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="clearCanvas()" title="Clear">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="canvas-container p-3">
+                        <canvas id="sketchCanvas" class="w-100" height="350"></canvas>
+                        <div id="cursorOverlay"></div>
+                        <div id="eraserCircle" class="eraser-circle"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="saveSketch()">
+                        <i class="bi bi-save"></i> Save Drawing
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="testimonials-section">
+        <div class="container">
+            <h2 class="text-center mb-5">What Our Users Say</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p>"This tool has completely transformed my content creation process. My click-through rates have increased by 40%!"</p>
+                        <cite>- Sarah J., Content Creator</cite>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p>"As someone with no design experience, this tool has been a game-changer for my YouTube channel."</p>
+                        <cite>- Mike T., YouTuber</cite>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p>"The AI-generated thumbnails are consistently better than what I could create manually. Highly recommended!"</p>
+                        <cite>- Lisa M., Digital Marketer</cite>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing-section py-12" id="pricing">
+        <div class="container">
+            <h2 class="text-center display-4 mb-3">Choose Your Plan</h2>
+            <p class="text-center mb-5">Select a plan that best fits your thumbnail creation needs</p>
+            <div class="row justify-content-center">
+                <div class="col-md-4 mb-4">
+                    <div class="pricing-card text-center">
+                        <div class="pricing-header p-4">
+                            <h3 class="pricing-title mb-4">Starter</h3>
+                            <div class="price-wrapper mb-3">
+                                <span class="currency">$</span>
+                                <span class="price">4.99</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <div class="pricing-features p-4">
+                            <ul class="list-unstyled mb-4">
+                                <li class="mb-3">✓ 15 Thumbnails/month</li>
+                                <li class="mb-3">✓ Standard Quality images</li>
+                                <!-- <li class="mb-3">✓ Standard Support</li> -->
+                                <!-- <li class="mb-3">✓ 720p Resolution</li> -->
+                            </ul>
+                        </div>
+                        <div class="pricing-footer p-4">
+                            <button class="btn btn-custom w-100" onclick="subscribeNow('starter')">Choose Plan →</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="pricing-card highlighted">
+                        <div class="popular-badge">Most Popular</div>
+                        <div class="text-center pricing-header p-4">
+                            <h3 class="text-center pricing-title mb-4">Scale</h3>
+                            <div class="price-wrapper mb-3">
+                                <span class="currency">$</span>
+                                <span class="price">15.99</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <div class="text-center pricing-features p-4">
+                            <ul class="list-unstyled mb-4">
+                                <li class="mb-3">✓ 100 Thumbnails/month</li>
+                                <li class="mb-3">✓ High Quality images</li>
+                                <!-- <li class="mb-3">✓ Priority Support</li> -->
+                                <!-- <li class="mb-3">✓ 4K Resolution</li> -->
+                            </ul>
+                        </div>
+                        <div class="pricing-footer p-4">
+                            <button class="btn btn-custom btn-light w-100" onclick="subscribeNow('scale')">Choose Plan →</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="pricing-card text-center">
+                        <div class="pricing-header p-4">
+                            <h3 class="pricing-title mb-4">Growth</h3>
+                            <div class="price-wrapper mb-3">
+                                <span class="currency">$</span>
+                                <span class="price">10.99</span>
+                                <span class="period">/month</span>
+                            </div>
+                        </div>
+                        <div class="pricing-features p-4">
+                            <ul class="list-unstyled mb-4">
+                                <li class="mb-3">✓ 50 Thumbnails/month</li>
+                                <li class="mb-3">✓ High Quality images</li>
+                                <!-- <li class="mb-3">✓ Email Support</li> -->
+                                <!-- <li class="mb-3">✓ 1080p Resolution</li> -->
+                            </ul>
+                        </div>
+                        <div class="pricing-footer p-4">
+                            <button class="btn btn-custom w-100" onclick="subscribeNow('growth')">Choose Plan →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="text-center">© 2024 AI Thumbnail Generator. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imagePreviewModalLabel">Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="previewImage" src="" alt="Preview" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="results" class="mt-4" style="display: none;">
+        <h3 class="text-center mb-4">Generated Thumbnails</h3>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3" v-for="(image, index) in generatedImages" :key="index">
+                <div class="card h-100">
+                    <img :src="image" class="card-img-top" :alt="'Thumbnail ' + (index + 1)" 
+                         @click="previewImage(image)" style="cursor: pointer;">
+                    <div class="card-body text-center">
+                        <button class="btn btn-primary" @click="downloadImage(image, index)">
+                            <i class="bi bi-download"></i> Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="loginModalLabel">Login to Your Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form onsubmit="handleLogin(event)">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email address</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="#" class="text-decoration-none">Forgot password?</a>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <p class="mb-0">Don't have an account? <a href="#" onclick="bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide(); showSignup();" class="text-decoration-none">Sign up now</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div class="modal fade" id="signupModal" tabindex="-1" aria-labelledby="signupModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="signupModalLabel">Create an Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form onsubmit="handleSignup(event)">
+                        <div class="mb-3">
+                            <label for="signupEmail" class="form-label">Email address</label>
+                            <input type="email" class="form-control" id="signupEmail" required>
+                            <div class="form-text">We'll never share your email with anyone else.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="signupPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="signupPassword" required minlength="6">
+                            <div class="form-text">Password must be at least 6 characters long.</div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="termsAgree" required>
+                            <label class="form-check-label" for="termsAgree">I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a></label>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Sign Up</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <p class="mb-0">Already have an account? <a href="#" onclick="bootstrap.Modal.getInstance(document.getElementById('signupModal')).hide(); showLogin();" class="text-decoration-none">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription Modal -->
+    <div class="modal fade" id="subscriptionModal" tabindex="-1" aria-labelledby="subscriptionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="subscriptionModalLabel">Your Subscription</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="subscriptionInfo">
+                        <div class="text-center py-4" id="subscriptionLoading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading your subscription details...</p>
+                        </div>
+                        <div id="noSubscription" class="d-none">
+                            <div class="alert alert-info">
+                                <p class="mb-0">You don't have an active subscription yet.</p>
+                            </div>
+                            <div class="text-center">
+                                <a href="#pricing" class="btn btn-primary" data-bs-dismiss="modal">View Plans</a>
+                            </div>
+                        </div>
+                        <div id="activeSubscription" class="d-none">
+                            <div class="card mb-4">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">Active Subscription</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>Plan:</span>
+                                            <strong id="currentPlan">Premium</strong>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>Status:</span>
+                                            <span class="badge bg-success" id="subscriptionStatus">Active</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>Renews On:</span>
+                                            <span id="renewalDate">-</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <button class="btn btn-outline-primary mb-2" onclick="manageSubscription()">
+                                    Manage Subscription
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize auth on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if auth functions are loaded
+            if (typeof showLogin === 'function' && typeof showSignup === 'function') {
+                console.log('Auth functions loaded successfully');
+            } else {
+                console.error('Auth functions not loaded properly');
+            }
+
+            // Check subscription status if user is logged in
+            checkSubscriptionStatus();
+        });
+
+        // Check user's subscription status
+        async function checkSubscriptionStatus() {
+            try {
+                if (typeof supabase !== 'undefined' && supabase.auth) {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        // Show profile info
+                        document.querySelector('.logged-out').classList.add('d-none');
+                        document.querySelector('.logged-in').classList.remove('d-none');
+                        const userEmail = document.getElementById('userEmail');
+                        if (userEmail) userEmail.textContent = user.email;
+                        
+                        // Fetch subscription status
+                        const response = await fetch(`/subscription-status?user_id=${user.id}`);
+                        const data = await response.json();
+                        
+                        // Store subscription data globally
+                        window.userSubscription = data.has_subscription ? data.subscription : null;
+                        
+                        if (data.success && data.has_subscription && data.subscription.status === 'active') {
+                            // Show active plan info
+                            document.querySelectorAll('.pricing-card').forEach(card => {
+                                const planBtn = card.querySelector('.btn-custom');
+                                const planName = card.querySelector('.pricing-title').textContent.toLowerCase().trim();
+                                
+                                if (planName === data.subscription.plan) {
+                                    planBtn.textContent = 'Current Plan';
+                                    planBtn.classList.add('btn-success');
+                                    planBtn.disabled = true;
+                                } else {
+                                    planBtn.textContent = 'Change Plan →';
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking subscription status:', error);
+            }
+        }
+
+        // Handle subscription management
+        async function manageSubscription() {
+            try {
+                if (typeof supabase !== 'undefined' && supabase.auth) {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        // Show loading state
+                        const button = document.querySelector('#activeSubscription button');
+                        const originalText = button.textContent;
+                        button.disabled = true;
+                        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+                        
+                        const response = await fetch(`/manage-subscription?user_id=${user.id}`);
+                        const data = await response.json();
+                        
+                        if (data.success && data.portal_url) {
+                            window.location.href = data.portal_url;
+                        } else {
+                            // Show error in the subscription modal instead of an alert
+                            const errorMessage = data.error || 'Could not access subscription portal';
+                            
+                            if (errorMessage.includes('No configuration provided') || errorMessage.includes('not been created')) {
+                                // Show specific message for unconfigured portal
+                                const cardBody = document.querySelector('#activeSubscription .card-body');
+                                const errorDiv = document.createElement('div');
+                                errorDiv.className = 'alert alert-warning mt-3';
+                                errorDiv.innerHTML = `
+                                    <p class="mb-1"><strong>Portal not configured</strong></p>
+                                    <p class="mb-0">The Stripe Customer Portal needs to be configured. Please contact support.</p>
+                                `;
+                                cardBody.appendChild(errorDiv);
+                            } else {
+                                // Generic error message
+                                const cardBody = document.querySelector('#activeSubscription .card-body');
+                                const errorDiv = document.createElement('div');
+                                errorDiv.className = 'alert alert-danger mt-3';
+                                errorDiv.innerHTML = `
+                                    <p class="mb-1"><strong>Error</strong></p>
+                                    <p class="mb-0">${errorMessage}</p>
+                                `;
+                                cardBody.appendChild(errorDiv);
+                            }
+                        }
+                    } else {
+                        showLogin();
+                    }
+                }
+            } catch (error) {
+                console.error('Error managing subscription:', error);
+                
+                // Show error in the subscription modal
+                const cardBody = document.querySelector('#activeSubscription .card-body');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger mt-3';
+                errorDiv.innerHTML = `
+                    <p class="mb-1"><strong>Error</strong></p>
+                    <p class="mb-0">Error accessing subscription portal. Please try again later.</p>
+                `;
+                cardBody.appendChild(errorDiv);
+            } finally {
+                // Reset button state
+                const button = document.querySelector('#activeSubscription button');
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = 'Manage Subscription';
+                }
+            }
+        }
+
+        // Handle subscription purchase
+        async function subscribeNow(plan) {
+            try {
+                // Check if user is logged in
+                if (typeof supabase !== 'undefined' && supabase.auth) {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    
+                    if (!user) {
+                        // Save the plan to local storage and show login
+                        localStorage.setItem('pendingSubscription', plan);
+                        alert('Please login or sign up to continue with your subscription.');
+                        showLogin();
+                        return;
+                    }
+                    
+                    // Create checkout session
+                    const response = await fetch('/create-checkout-session', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user_id: user.id,
+                            email: user.email,
+                            plan: plan
+                        }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.checkout_url) {
+                        // Redirect to Stripe Checkout
+                        window.location.href = data.checkout_url;
+                    } else {
+                        alert('Error: ' + (data.error || 'Could not create checkout session'));
+                    }
+                } else {
+                    alert('Authentication service not available. Please try again later.');
+                }
+            } catch (error) {
+                console.error('Error creating subscription:', error);
+                alert('Error creating subscription. Please try again later.');
+            }
+        }
+
+        // Complete any pending subscription after login/signup
+        function checkPendingSubscription() {
+            const pendingPlan = localStorage.getItem('pendingSubscription');
+            if (pendingPlan) {
+                localStorage.removeItem('pendingSubscription');
+                subscribeNow(pendingPlan);
+            }
+        }
+
+        // Update login/signup handlers to check for pending subscriptions
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const email = form.querySelector('#loginEmail').value;
+            const password = form.querySelector('#loginPassword').value;
+            
+            // Disable the button and show loading state
+            const button = form.querySelector('button[type="submit"]');
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                
+                if (error) {
+                    throw new Error(error.message);
+                }
+                
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success';
+                alert.innerHTML = 'Logged in successfully!';
+                form.prepend(alert);
+                
+                // Reset form
+                form.reset();
+                
+                // Update UI
+                document.querySelector('.logged-out').classList.add('d-none');
+                document.querySelector('.logged-in').classList.remove('d-none');
+                
+                const userEmail = document.getElementById('userEmail');
+                if (userEmail && data.user) {
+                    userEmail.textContent = data.user.email;
+                }
+                
+                // Check for active subscription
+                checkSubscriptionStatus();
+                
+                // Close modal after 2 seconds
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+                    alert.remove();
+                }, 2000);
+                
+                // Check for pending subscription after successful login
+                checkPendingSubscription();
+            } catch (error) {
+                // Show error message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger';
+                alert.innerHTML = error.message;
+                form.prepend(alert);
+                
+                // Remove error message after 3 seconds
+                setTimeout(() => {
+                    alert.remove();
+                }, 3000);
+            } finally {
+                // Re-enable the button
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const email = form.querySelector('#signupEmail').value;
+            const password = form.querySelector('#signupPassword').value;
+            
+            // Disable the button and show loading state
+            const button = form.querySelector('button[type="submit"]');
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Signing up...';
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                
+                if (error) {
+                    throw new Error(error.message);
+                }
+                
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success';
+                alert.innerHTML = 'Signup successful! Check your email for confirmation.';
+                form.prepend(alert);
+                
+                // Reset form
+                form.reset();
+                
+                // Close modal after 3 seconds
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('signupModal')).hide();
+                    alert.remove();
+                }, 3000);
+                
+                // Check for pending subscription after successful signup
+                checkPendingSubscription();
+            } catch (error) {
+                // Show error message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger';
+                alert.innerHTML = error.message;
+                form.prepend(alert);
+                
+                // Remove error message after 3 seconds
+                setTimeout(() => {
+                    alert.remove();
+                }, 3000);
+            } finally {
+                // Re-enable the button
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+
+        function showLogin() {
+            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+        }
+
+        function showSignup() {
+            const signupModal = new bootstrap.Modal(document.getElementById('signupModal'));
+            signupModal.show();
+        }
+
+        function handleLogout() {
+            // Add your logout logic here
+            supabase.auth.signOut().then(() => {
+                // Clear subscription data
+                window.userSubscription = null;
+                
+                // Update UI after logout
+                document.querySelector('.logged-out').classList.remove('d-none');
+                document.querySelector('.logged-in').classList.add('d-none');
+                
+                // Reset pricing buttons
+                document.querySelectorAll('.pricing-card .btn-custom').forEach(btn => {
+                    btn.textContent = 'Choose Plan →';
+                    btn.classList.remove('btn-success');
+                    btn.disabled = false;
+                });
+            }).catch(error => {
+                console.error('Error signing out:', error);
+                alert('Failed to sign out. Please try again.');
+            });
+        }
+
+        // Image Preview Handler
+        function handleImagePreview(input) {
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            
+            // Maximum number of images allowed
+            const MAX_IMAGES = 2;
+            
+            // If no files selected, return
+            if (input.files.length === 0) return;
+            
+            // Check total number of existing previews plus new files
+            const existingPreviews = previewContainer.querySelectorAll('.image-preview');
+            const totalFiles = existingPreviews.length + input.files.length;
+            
+            if (totalFiles > MAX_IMAGES) {
+                alert(`Maximum ${MAX_IMAGES} reference images allowed. Please remove some images first.`);
+                return;
+            }
+            
+            // Process each selected file
+            Array.from(input.files).forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    alert(`File "${file.name}" is not an image. Only image files are accepted.`);
+                    return;
+                }
+                
+                const reader = new FileReader();
+                const previewWrapper = document.createElement('div');
+                previewWrapper.className = 'preview-wrapper position-relative';
+                
+                reader.onload = function(e) {
+                    previewWrapper.innerHTML = `
+                        <div class="image-preview">
+                            <img src="${e.target.result}" alt="Reference image preview">
+                            <button type="button" class="btn-remove" data-filename="${file.name}">×</button>
+                        </div>
+                    `;
+                    
+                    // Add click event to remove button
+                    const removeBtn = previewWrapper.querySelector('.btn-remove');
+                    removeBtn.addEventListener('click', function() {
+                        previewWrapper.remove();
+                    });
+                };
+                
+                reader.readAsDataURL(file);
+                previewContainer.appendChild(previewWrapper);
+            });
+        }
+
+        function removeImage(button) {
+            const wrapper = button.closest('.preview-wrapper');
+            const input = document.getElementById('reference_images');
+            const dt = new DataTransfer();
+            const files = input.files;
+            
+            // Rebuild FileList without the removed file
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].name !== button.dataset.filename) {
+                    dt.items.add(files[i]);
+                }
+            }
+            
+            input.files = dt.files;
+            wrapper.remove();
+        }
+
+        // Canvas Setup and Drawing Functions
+        const canvas = document.getElementById('sketchCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentColor = '#000000';
+        let currentSize = 2;
+        let isEraser = false;
+        let drawingHistory = [];
+        let currentPath = [];
+
+        // Initialize canvas when modal is shown
+        document.getElementById('sketchModal').addEventListener('shown.bs.modal', function () {
+            resizeCanvas();
+            // Set initial canvas background to white
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Load existing sketch if available
+            const canvasData = document.getElementById('canvasData').value;
+            if (canvasData) {
+                const img = new Image();
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    drawingHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+                };
+                img.src = canvasData;
+            } else {
+                drawingHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            }
+        });
+
+        // Add event listeners for drawing
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch events for mobile
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            startDrawing(e);
+        });
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            draw(e);
+        });
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchcancel', stopDrawing);
+
+        // Tool Selection
+        document.getElementById('brushTool').addEventListener('click', function() {
+            isEraser = false;
+            this.classList.add('active');
+            document.getElementById('eraserTool').classList.remove('active');
+            ctx.strokeStyle = currentColor;
+            
+            // Smooth transition for cursor change
+            requestAnimationFrame(() => {
+                canvas.classList.add('brush-cursor');
+                canvas.classList.remove('eraser-cursor');
+                if (cursorOverlay) {
+                    cursorOverlay.style.display = 'block';
+                    eraserCircle.style.display = 'none';
+                }
+            });
+        });
+
+        document.getElementById('eraserTool').addEventListener('click', function() {
+            isEraser = true;
+            this.classList.add('active');
+            document.getElementById('brushTool').classList.remove('active');
+            
+            // Smooth transition for cursor change
+            requestAnimationFrame(() => {
+                canvas.classList.add('eraser-cursor');
+                canvas.classList.remove('brush-cursor');
+                if (eraserCircle) {
+                    eraserCircle.style.display = 'block';
+                    cursorOverlay.style.display = 'none';
+                }
+            });
+        });
+
+        // Color Picker
+        document.getElementById('colorPicker').addEventListener('input', function(e) {
+            currentColor = e.target.value;
+            if (!isEraser) {
+                ctx.strokeStyle = currentColor;
+            }
+        });
+
+        // Brush Size
+        document.getElementById('brushSize').addEventListener('input', function(e) {
+            currentSize = e.target.value;
+            document.getElementById('brushSizeValue').textContent = currentSize + 'px';
+            ctx.lineWidth = currentSize;
+            if (isEraser && eraserCircle) {
+                eraserCircle.style.width = `${currentSize}px`;
+                eraserCircle.style.height = `${currentSize}px`;
+            }
+        });
+
+        let cursorOverlay = document.getElementById('cursorOverlay');
+        let eraserCircle = document.getElementById('eraserCircle');
+
+        // Update cursor position
+        function updateCursor(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            // Calculate position relative to canvas
+            const canvasX = x - rect.left;
+            const canvasY = y - rect.top;
+            
+            if (isEraser) {
+                eraserCircle.style.display = 'block';
+                cursorOverlay.style.display = 'none';
+                eraserCircle.style.width = `${currentSize}px`;
+                eraserCircle.style.height = `${currentSize}px`;
+                eraserCircle.style.left = `${x}px`;
+                eraserCircle.style.top = `${y}px`;
+            } else {
+                eraserCircle.style.display = 'none';
+                cursorOverlay.style.display = 'block';
+                // Offset the brush cursor to align with the tip
+                cursorOverlay.style.left = `${x}px`;
+                cursorOverlay.style.top = `${y}px`;
+                
+                // Update the drawing position to match the brush tip
+                lastX = canvasX;
+                lastY = canvasY;
+            }
+        }
+
+        // Add mousemove event listener to the canvas
+        canvas.addEventListener('mousemove', updateCursor);
+
+        // Hide cursors when leaving canvas
+        canvas.addEventListener('mouseout', function() {
+            cursorOverlay.style.display = 'none';
+            eraserCircle.style.display = 'none';
+        });
+
+        // Show appropriate cursor when entering canvas
+        canvas.addEventListener('mouseenter', function(e) {
+            updateCursor(e);
+        });
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.offsetWidth - 24;
+            canvas.height = 350; // Fixed height
+            
+            // Reset canvas context properties after resize
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = currentSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Reset cursor style
+            if (isEraser) {
+                canvas.classList.add('eraser-cursor');
+                canvas.classList.remove('brush-cursor');
+            } else {
+                canvas.classList.add('brush-cursor');
+                canvas.classList.remove('eraser-cursor');
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Drawing Functions
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.type.includes('touch') ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+            const y = e.type.includes('touch') ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+            
+            // Adjust the starting position based on the brush tip offset
+            if (!isEraser) {
+                lastX = x;
+                lastY = y;
+            } else {
+                lastX = x;
+                lastY = y;
+            }
+            
+            currentPath = [[lastX, lastY]];
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            
+            // Draw a single point for dot drawing
+            if (!isEraser) {
+                ctx.arc(lastX, lastY, ctx.lineWidth / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.type.includes('touch') ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+            const y = e.type.includes('touch') ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+            
+            currentPath.push([x, y]);
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            
+            ctx.lineTo(x, y);
+            
+            
+            if (isEraser) {
+                ctx.globalCompositeOperation = 'destination-out'; // Key part: this enables erasing
+                ctx.strokeStyle = 'rgba(0,0,0,1)'; // Doesn't matter; it's erasing
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = currentColor;
+            }
+            ctx.stroke();
+            ctx.globalCompositeOperation = 'source-over'; // reset after each stroke
+            
+            lastX = x;
+            lastY = y;
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            drawingHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        }
+
+        function getCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.type.includes('touch') 
+                ? e.touches[0].clientX - rect.left 
+                : e.clientX - rect.left;
+            const y = e.type.includes('touch') 
+                ? e.touches[0].clientY - rect.top 
+                : e.clientY - rect.top;
+            return [x, y];
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawingHistory = [ctx.getImageData(0, 0, canvas.width, canvas.height)];
+            document.getElementById('canvasData').value = '';
+        }
+
+        function undoLastStroke() {
+            if (drawingHistory.length > 1) {
+                drawingHistory.pop();
+                ctx.putImageData(drawingHistory[drawingHistory.length - 1], 0, 0);
+            } else if (drawingHistory.length === 1) {
+                clearCanvas();
+            }
+        }
+
+        function saveSketch() {
+            const canvasData = canvas.toDataURL();
+            document.getElementById('canvasData').value = canvasData;
+            
+            // Update preview
+            const previewContainer = document.getElementById('sketchPreviewContainer');
+            const previewImg = document.getElementById('sketchPreview');
+            previewImg.src = canvasData;
+            previewContainer.classList.remove('d-none');
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('sketchModal'));
+            modal.hide();
+        }
+
+        function openSketchModal() {
+            const modal = new bootstrap.Modal(document.getElementById('sketchModal'));
+            modal.show();
+        }
+
+        function removeSketch(event) {
+            event.stopPropagation(); // Prevent modal from opening when removing
+            const previewContainer = document.getElementById('sketchPreviewContainer');
+            const previewImg = document.getElementById('sketchPreview');
+            document.getElementById('canvasData').value = '';
+            previewImg.src = '';
+            previewContainer.classList.add('d-none');
+        }
+
+        // Initialize sketch preview if there's existing data
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvasData = document.getElementById('canvasData').value;
+            if (canvasData) {
+                const previewContainer = document.getElementById('sketchPreviewContainer');
+                const previewImg = document.getElementById('sketchPreview');
+                previewImg.src = canvasData;
+                previewContainer.classList.remove('d-none');
+            }
+        });
+
+        // Add this new function for form validation
+        function validateForm() {
+            const canvasData = document.getElementById('canvasData').value;
+            if (!canvasData) {
+                // Show error alert
+                const errorAlert = document.createElement('div');
+                errorAlert.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                errorAlert.style.zIndex = '1050';
+                errorAlert.innerHTML = `
+                    <strong>Error:</strong> Please draw a sketch before generating a thumbnail.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.body.appendChild(errorAlert);
+                
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    errorAlert.classList.remove('show');
+                    setTimeout(() => errorAlert.remove(), 150);
+                }, 5000);
+                return false;
+            }
+            return true;
+        }
+
+        // Update handleSubmit to include validation
+        async function handleSubmit(event) {
+            event.preventDefault();
+            
+            // ✅ Block anonymous users
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                alert('Please log in to generate thumbnails.');
+                showLogin(); // Trigger login modal
+                return;
+            }
+
+            // ✅ Check for active subscription
+            if (!window.userSubscription) {
+                // We haven't checked subscription status yet or it's not available
+                try {
+                    const response = await fetch(`/subscription-status?user_id=${user.id}`);
+                    const data = await response.json();
+                    window.userSubscription = data.has_subscription ? data.subscription : null;
+                } catch (error) {
+                    console.error('Error checking subscription status:', error);
+                }
+            }
+
+            // If no active subscription, show subscription required modal
+            if (!window.userSubscription || window.userSubscription.status !== 'active') {
+                // Show subscription required modal
+                showSubscriptionRequiredModal();
+                return;
+            }
+
+            if (!validateForm()) {
+                return;
+            }
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // Add user ID from Supabase Auth if available
+            try {
+                // Check if supabase client is defined
+                if (typeof supabase !== 'undefined' && supabase.auth) {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        formData.append('user_id', user.id);
+                    }
+                } else {
+                    console.warn('Supabase client not properly initialized');
+                }
+            } catch (error) {
+                console.warn('Unable to get user ID:', error);
+            }
+            
+            const generateBtn = document.getElementById('generateBtn');
+            const buttonText = generateBtn.querySelector('.button-text');
+            const spinner = generateBtn.querySelector('.spinner-border');
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+
+            // Show loading states
+            buttonText.textContent = 'Generating...';
+            spinner.classList.remove('d-none');
+            generateBtn.disabled = true;
+            loadingOverlay.classList.remove('d-none');
+            
+            // Display initial status message
+            const loadingContent = document.querySelector('.loading-content');
+            loadingContent.innerHTML = `
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h4 class="text-primary mb-2">Generating Thumbnail...</h4>
+                <p class="text-muted">Aura Farming in progress...</p>
+            `;
+
+            // Update message after 10 seconds
+            setTimeout(() => {
+                const statusMessage = loadingContent.querySelector('.text-muted');
+                if (statusMessage) {
+                    statusMessage.textContent = "We're cooking! BRO CHILL!!!";
+                }
+            }, 10000);
+
+            try {
+                // Get JWT token from Supabase Auth if available
+                let authToken = null;
+                try {
+                    if (typeof supabase !== 'undefined' && supabase.auth) {
+                        const { data } = await supabase.auth.getSession();
+                        if (data.session) {
+                            authToken = data.session.access_token;
+                        }
+                    } else {
+                        console.warn('Supabase client not properly initialized');
+                    }
+                } catch (error) {
+                    console.warn('Unable to get auth token:', error);
+                }
+                
+                // Set up fetch options
+                const fetchOptions = {
+                    method: 'POST',
+                    body: formData
+                };
+                
+                // Add authorization header if token is available
+                if (authToken) {
+                    fetchOptions.headers = {
+                        'Authorization': `Bearer ${authToken}`
+                    };
+                }
+                
+                const response = await fetch('/generate', fetchOptions);
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Generation failed');
+                }
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to generate thumbnails');
+                }
+                
+                // Clear previous results
+                resultsContainer.innerHTML = '';
+                
+                // Add new results
+                data.images.forEach(imageUrl => {
+                    const thumbnailHtml = `
+                        <div class="col-md-8 mx-auto">
+                            <div class="generated-thumbnail">
+                                <img src="${imageUrl}" alt="Generated Thumbnail" 
+                                     class="img-fluid rounded shadow-sm" 
+                                     onclick="previewImage('${imageUrl}')"
+                                     style="cursor: pointer;">
+                                <div class="d-flex justify-content-center mt-3">
+                                    <a href="${imageUrl}" download class="btn btn-primary">
+                                        <i class="bi bi-download me-2"></i> Download Thumbnail
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    resultsContainer.insertAdjacentHTML('beforeend', thumbnailHtml);
+                });
+
+                // Show results section
+                resultsSection.classList.remove('d-none');
+                
+                // Scroll to results
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error('Error:', error);
+                
+                // Remove any existing error alerts
+                const existingAlerts = document.querySelectorAll('.alert-danger');
+                existingAlerts.forEach(alert => alert.remove());
+                
+                // Show error in a more user-friendly way
+                const errorMessage = error.message || 'Failed to generate thumbnails. Please try again.';
+                
+                // Create error alert
+                const errorAlert = document.createElement('div');
+                errorAlert.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                errorAlert.style.zIndex = '1050';
+                errorAlert.innerHTML = `
+                    <strong>Error:</strong> ${errorMessage}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                // Add to document body
+                document.body.appendChild(errorAlert);
+                
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    errorAlert.classList.remove('show');
+                    setTimeout(() => errorAlert.remove(), 150);
+                }, 5000);
+            } finally {
+                // Reset states
+                buttonText.textContent = 'Generate Thumbnails';
+                spinner.classList.add('d-none');
+                generateBtn.disabled = false;
+                loadingOverlay.classList.add('d-none');
+            }
+        }
+
+        function previewImage(imageUrl) {
+            const previewImage = document.getElementById('previewImage');
+            previewImage.src = imageUrl;
+            const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+            modal.show();
+        }
+
+        // Show subscription modal with user's current plan
+        function showSubscriptionModal() {
+            // Reset modal state
+            document.getElementById('subscriptionLoading').classList.remove('d-none');
+            document.getElementById('noSubscription').classList.add('d-none');
+            document.getElementById('activeSubscription').classList.add('d-none');
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('subscriptionModal'));
+            modal.show();
+            
+            // Check if we already have subscription data
+            if (window.userSubscription) {
+                updateSubscriptionModal(window.userSubscription);
+            } else {
+                // Fetch subscription data if not already available
+                fetchSubscriptionData();
+            }
+        }
+        
+        // Fetch subscription data from server
+        async function fetchSubscriptionData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                
+                const response = await fetch(`/subscription-status?user_id=${user.id}`);
+                const data = await response.json();
+                
+                window.userSubscription = data.has_subscription ? data.subscription : null;
+                updateSubscriptionModal(window.userSubscription);
+            } catch (error) {
+                console.error('Error fetching subscription data:', error);
+                document.getElementById('subscriptionLoading').classList.add('d-none');
+                
+                // Show error message
+                const noSubDiv = document.getElementById('noSubscription');
+                noSubDiv.classList.remove('d-none');
+                noSubDiv.querySelector('.alert').innerHTML = 'Error loading subscription data. Please try again later.';
+            }
+        }
+        
+        // Update the subscription modal with the user's subscription data
+        function updateSubscriptionModal(subscription) {
+            document.getElementById('subscriptionLoading').classList.add('d-none');
+            
+            if (!subscription) {
+                document.getElementById('noSubscription').classList.remove('d-none');
+                return;
+            }
+            
+            const activeSubDiv = document.getElementById('activeSubscription');
+            activeSubDiv.classList.remove('d-none');
+            
+            // Format plan name for display (capitalize first letter)
+            const planName = subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1);
+            document.getElementById('currentPlan').textContent = planName;
+            
+            // Set subscription status
+            const statusBadge = document.getElementById('subscriptionStatus');
+            statusBadge.textContent = subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1);
+            
+            // Set badge color based on status
+            statusBadge.className = 'badge';
+            if (subscription.status === 'active') {
+                statusBadge.classList.add('bg-success');
+            } else if (subscription.status === 'trialing') {
+                statusBadge.classList.add('bg-info');
+            } else if (subscription.status === 'past_due') {
+                statusBadge.classList.add('bg-warning');
+            } else if (subscription.status === 'canceled') {
+                statusBadge.classList.add('bg-danger');
+            } else {
+                statusBadge.classList.add('bg-secondary');
+            }
+            
+            // Set renewal date if available
+            if (subscription.current_period_end) {
+                const renewalDate = new Date(subscription.current_period_end * 1000);
+                document.getElementById('renewalDate').textContent = renewalDate.toLocaleDateString();
+            } else {
+                document.getElementById('renewalDate').textContent = 'Not available';
+            }
+        }
+
+        // Function to show subscription required modal
+        function showSubscriptionRequiredModal() {
+            // Create modal if it doesn't exist
+            if (!document.getElementById('subscriptionRequiredModal')) {
+                const modalHtml = `
+                    <div class="modal fade" id="subscriptionRequiredModal" tabindex="-1" aria-labelledby="subscriptionRequiredModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="subscriptionRequiredModalLabel">Subscription Required</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="text-center mb-4">
+                                        <i class="bi bi-lock-fill text-warning" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h4 class="text-center mb-3">Active Subscription Required</h4>
+                                    <p class="text-center">You need an active subscription to generate thumbnails.</p>
+                                    <p class="text-center mb-4">Choose a plan that suits your needs to start generating stunning thumbnails!</p>
+                                </div>
+                                <div class="modal-footer justify-content-center">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-primary" onclick="scrollToPricing()">View Plans</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('subscriptionRequiredModal'));
+            modal.show();
+        }
+
+        // Function to scroll to pricing section
+        function scrollToPricing() {
+            // Hide the modal first
+            const modal = bootstrap.Modal.getInstance(document.getElementById('subscriptionRequiredModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Give the modal time to close before scrolling
+            setTimeout(() => {
+                const pricingSection = document.getElementById('pricing');
+                if (pricingSection) {
+                    pricingSection.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 300);
+        }
+    </script>
+</body>
+</html> 

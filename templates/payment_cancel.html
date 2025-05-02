@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Cancelled - AI Thumbnail Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand mx-auto" href="/">AI Thumbnail Generator</a>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <div class="cancel-container p-5 bg-white shadow-sm rounded">
+                    <div class="cancel-icon mb-4">
+                        <i class="bi bi-x-circle text-secondary" style="font-size: 80px;"></i>
+                    </div>
+                    
+                    <h1 class="mb-4">Payment Cancelled</h1>
+                    
+                    <p class="lead mb-4">Your subscription process was cancelled.</p>
+                    
+                    <p class="mb-4">No charges have been made to your account. If you have any questions or need assistance, feel free to contact our support team.</p>
+                    
+                    <div class="mt-5">
+                        <a href="/" class="btn btn-primary btn-lg">Return to Home</a>
+                        <a href="/#pricing" class="btn btn-outline-primary btn-lg ms-3">View Plans</a>
+                    </div>
+                </div>
+                
+                <div class="mt-5">
+                    <h3>Need Help?</h3>
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Common Questions</h5>
+                            <ul class="list-group list-group-flush text-start">
+                                <li class="list-group-item bg-transparent">
+                                    <strong>Why was my payment cancelled?</strong>
+                                    <p class="mb-0">The payment process was cancelled, which could happen if you closed the browser, clicked the back button, or chose to cancel the payment.</p>
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <strong>Was I charged?</strong>
+                                    <p class="mb-0">No, your card was not charged. We only process payments once they're successfully completed.</p>
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <strong>How do I subscribe again?</strong>
+                                    <p class="mb-0">You can visit our <a href="/#pricing">pricing page</a> to choose a plan and try again.</p>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-auto">
+        <div class="container">
+            <p class="text-center">© 2024 AI Thumbnail Generator. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
